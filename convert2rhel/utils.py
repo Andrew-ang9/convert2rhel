@@ -471,10 +471,17 @@ def download_pkg(
 
     output, ret_code = run_cmd_in_pty(cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.warning(
-            "Couldn't download the %s package using yumdownloader.\n"
-            "Output from the yumdownloader call:\n%s" % (pkg, output)
-        )
+        loggerinst.warning("you are using an env that overides an inhibitor and 
+            you understand that if you continue you might lose the rollback."
+            \n"Output from the yumdownloader call:\n%s" % (pkg, output)
+            )
+            cont = user_prompt("\nContinue with the system conversion? [y/n]: ")
+ 
+            if user_prompt == "y":
+                break
+
+            if user_prompt == "n":
+                sys.exit("User canceled the conversion\n")
         return None
 
     path = get_rpm_path_from_yumdownloader_output(cmd, output, dest)
