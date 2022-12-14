@@ -757,17 +757,71 @@ def is_loaded_kernel_latest():
         )
         return
 
-    packages = []
-    # We are expecting an repoquery output to be similar to this:
-    #   C2R     1671212820      3.10.0-1160.81.1.el7    updates
-    # We need the `C2R` identifier to be present on the line so we can know for
-    # sure that the line we are working with is the a line that contains
-    # relevant repoquery information to our check, otherwise, we just log the
-    # information as debug and do nothing with it.
-    for line in repoquery_output.split("\n"):
-        if line.strip() and "C2R" in line:
-            _, build_time, latest_kernel, repoid = tuple(str(line).split("\t"))
-            packages.append((build_time, latest_kernel, repoid))
+    # Repoquery doesn't return any text at all when it can't find any matches for the query (when used with --quiet)
+    if len(repoquery_output) > 0:
+        # Convert to an tuple split with `buildtime` and `kernel` version.
+        # We are also detecting if the sentence "listed more than once in the configuration"
+        # appears in the repoquery output. If it does, we ignore it.
+        # This later check is supposed to avoid duplicate repofiles being defined in the system,
+        # this is a super corner case and should not happen everytime, but if it does, we are aware now.
+        packages = [
+            tuple(str(line).split("\t"))
+            for line in repoquery_output.split("\n")
+            if (line.strip() and "listed more than once in the configuration" not in line.lower())
+        ]
+        # Filter out any error messages (things that do not have the three
+        # fields which we expect)
+        packages = [pkg for pkg in packages if len(pkg) == 3]
+
+        # Sort out for the most recent kernel with reverse order
+        # In case `repoquery` returns more than one kernel in the output
+        # We display the latest one to the user.
+        packages.sort(key=lambda x: x[0], reverse=True)
+
+        _, latest_kernel, repoid = packages[0]
+
+        # The loaded kernel version
+        uname_output, _ = run_subprocess(["uname", "-r"], print_output=False)
+        loaded_kernel = uname_output.rsplit(".", 1)[0]
+        match = compare_package_versions(latest_kernel, str(loaded_kernel))
+
+        if match == 0:
+            logger.info("The currently loaded kernel is at the latest version.")
+        else:
+            repos_message = (
+                "in the enabled system repositories"
+                if not reposdir
+                else "in repositories defined in the %s folder" % reposdir
+            )
+            logger.critical(
+                "The version of the loaded kernel is different from the latest version %s.\n"
+                " Latest kernel version available in %s: %s\n"
+                " Loaded kernel version: %s\n\n"
+                "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
+                "1. yum install %s-%s -y\n"
+                "2. reboot" % (repos_message, repoid, latest_kernel, loaded_kernel, package_to_check, latest_kernel)
+            )
+    else:
+        # Repoquery failed to detected any kernel or kernel-core packages in it's repositories
+        # we allow the user to provide a environment variable to override the functionality and proceed
+        # with the conversion, otherwise, we just throw an critical logging to them.
+        allow_older_envvar_names = (
+            "CONVERT2RHEL_ALLOW_SKIP_KERNEL_CURRENCY_CHECK",
+            "CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK",
+        )
+        if any(envvar in os.environ for envvar in allow_older_envvar_names):
+            if "CONVERT2RHEL_ALLOW_SKIP_KERNEL_CURRENCY_CHECK" not in os.environ:
+                logger.warning(
+                    "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK'"
+                    " environment variable.  Please switch to 'CONVERT2RHEL_ALLOW_SKIP_KERNEL_CURRENCY_CHECK'"
+                    " instead."
+                )
+
+            logger.warning(
+                "Detected 'CONVERT2RHEL_ALLOW_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
+                "the %s comparison.\n"
+                "Beware, this could leave your system in a broken state. " % package_to_check
+            )
         else:
             # Mainly for debugging purposes to see what is happening if we got
             # anything else that does not have the C2R identifier at the start
@@ -784,7 +838,7 @@ def is_loaded_kernel_latest():
                 "Could not find any %s from repositories to compare against the loaded kernel.\n"
                 "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
                 "If you wish to ignore this message, set the environment variable "
-                "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1." % package_to_check
+                "'CONVERT2RHEL_ALLOW_SKIP_KERNEL_CURRENCY_CHECK' to 1." % package_to_check
             )
 
         logger.warning(

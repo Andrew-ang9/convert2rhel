@@ -1327,6 +1327,15 @@ class TestIsLoadedKernelLatest:
             "package_name",
             "unsupported_skip",
             "expected",
+        )
+        (
+            pytest.param(
+            "",
+            0,
+            8,
+            "kernel-core",
+            "1",
+            "Detected 'CONVERT2RHEL_ALLOW_SKIP_KERNEL_CURRENCY_CHECK' environment variable",
         ),
         (
             pytest.param(
