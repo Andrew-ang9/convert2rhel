@@ -753,6 +753,35 @@ def download_pkg(
                 "Note that you can choose to ignore this check when actually running a conversion by"
                 " setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
                 " but not during pre-conversion analysis." % (pkg, system_info.name)
+        # add in the new envar that should be changed to along with the old one
+        allow_old_envar_names = ("CONVERT2RHEL_INCOMPLETE_ROLLBACK", "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK")
+
+        # search for either envar in the system to see if it has been set
+        if any(envvar in os.environ for envvar in allow_old_envar_names):
+
+            # check to see which envar was used
+            if "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" not in os.environ:
+                # give the warning about the old envar not being used anymore if it is used
+                loggerinst.warning(
+                    "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
+                    " environment variable.  Please switch to 'CONVERT2RHEL_INCOMPLETE_ROLLBACK' instead."
+                )
+
+            # give regular warning if the new envar is used
+            loggerinst.warning(
+                "Couldn't download the %s package. This means we will not be able to do a"
+                " complete rollback and may put the system in a broken state.\n"
+                "'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion." % (pkg)
+            )
+        else:
+            loggerinst.critical(
+                "Couldn't back up the packages: %s. This means that if a rollback is needed,"
+                "there is no guarantee that the packages will be restored on rollback, which"
+                "could put the system in a broken state.\nCheck to ensure that the %s "
+                "repositories are enabled, and the packages are updated to their latest "
+                "versions.\nIf this error still occurs after re-running the conversion, "
+                "you can set the environment variable CONVERT2RHEL_INCOMPLETE_ROLLBACK=1"
+                "to ignore this check." % (pkg, system_info.name)
             )
 
     path = get_rpm_path_from_yumdownloader_output(cmd, output, dest)
