@@ -753,6 +753,7 @@ def download_pkg(
                 "Note that you can choose to ignore this check when actually running a conversion by"
                 " setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
                 " but not during pre-conversion analysis." % (pkg, system_info.name)
+            )
         # add in the new envar that should be changed to along with the old one
         allow_old_envar_names = ("CONVERT2RHEL_INCOMPLETE_ROLLBACK", "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK")
 
