@@ -335,7 +335,7 @@ def incomplete_rollback_envar():
 def test_deprecated_envar_incomplete_rollback(shell, convert2rhel, repos):
     """
     This test verifies it's still allowed to use the deprecated
-    envar CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK".
+    envar CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK.
     Move all repositories away prior to the conversion to simulate
     inability to back up the packages by convert2rhel.
     """
