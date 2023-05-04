@@ -300,61 +300,56 @@ def test_disable_data_collection(shell, convert2rhel):
     del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]
 
 
-@pytest.fixture
-def analyze_incomplete_rollback_envar():
+@pytest.fixture(scope="function")
+def repos(shell):
+    """
+    Fixture to move away all the repositories and restore after the test.
+    """
+
+    backup_dir = "/tmp/repobckp"
+    repos_dir = "/etc/yum.repos.d"
+    shell(f"mkdir {backup_dir}")
+    # Move all the repos away
+    shell(f"mv {repos_dir}/* {backup_dir}/")
+
+    yield
+
+    # Restore repositories and remove the backup_dir
+    shell(f"mv {backup_dir}/* {repos_dir}/ && rm -rf {backup_dir}")
+
+
+@pytest.fixture(scope="function")
+def incomplete_rollback_envar():
+    """
+    Fixture to set the 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' envar
+    and delete after the test.
+    """
     os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
-    os.environ["CONVERT2RHEL_EXPERIMENTAL_ANALYSIS"] = "1"
 
     yield
 
     del os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"]
-    # Remove the `analyze` switch in case it won't get deleted in the test,
-    # so it won't interfere with other tests
-    if os.environ.get("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS"):
-        del os.environ["CONVERT2RHEL_EXPERIMENTAL_ANALYSIS"]
 
 
-@pytest.mark.test_analyze_incomplete_rollback
-def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incomplete_rollback_envar):
+@pytest.mark.test_deprecated_envar_incomplete_rollback
+def test_deprecated_envar_incomplete_rollback(shell, convert2rhel, repos):
     """
-    This test verifies that the CONVERT2RHEL_(UNSUPPORTED_)INCOMPLETE_ROLLBACK envar
-    is not honored when running with the analyze switch.
-    Repositories are moved to a different location so the
-    `REMOVE_REPOSITORY_FILES_PACKAGES.PACKAGE_REMOVAL_FAILED`
-    error is raised.
-    1/ convert2rhel is run in the analyze mode, the envar should not be
-       honored and the conversion should end
-    2/ convert2rhel is run in conversion mode, the envar should be
-       accepted and conversion continues
-    # TODO(danmyway) switch to `convert2rhel analyze` when available.
+    This test verifies it's still allowed to use the deprecated
+    envar CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK".
+    Move all repositories away prior to the conversion to simulate
+    inability to back up the packages by convert2rhel.
     """
     with convert2rhel("--debug --no-rpm-va") as c2r:
-        # We need to get past the data collection acknowledgement
+        # We need to get past the data collection acknowledgement.
         c2r.sendline("y")
-        c2r.expect("REMOVE_REPOSITORY_FILES_PACKAGES.PACKAGE_REMOVAL_FAILED", timeout=300)
-        # Verify the user is informed to not use the envar during the analysis
+        # Verify the user is not asked to use the new envar, when the old is in use
         assert (
-            c2r.expect(
-                "setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' but not during pre-conversion analysis",
-                timeout=300,
-            )
+            not c2r.expect("you can set the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'", timeout=120)
             == 0
         )
-        # The conversion should fail
-        assert c2r.exitstatus != 0
-
-    del os.environ["CONVERT2RHEL_EXPERIMENTAL_ANALYSIS"]
-
-    with convert2rhel("--debug --no-rpm-va") as c2r:
-        # We need to get past the data collection acknowledgement
-        c2r.sendline("y")
         assert (
-            c2r.expect(
-                "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.",
-                timeout=300,
-            )
-            == 0
+            c2r.expect("You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'", timeout=120) == 0
         )
-        c2r.sendcontrol("c")
+        assert c2r.expect("environment variable detected, continuing conversion.", timeout=120) == 0
 
-        assert c2r.exitstatus != 0
+    assert c2r.exitstatus != 0
