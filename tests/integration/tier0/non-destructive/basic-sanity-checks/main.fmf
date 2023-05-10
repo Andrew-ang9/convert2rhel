@@ -160,7 +160,7 @@ tag+:
     summary+: |
         Deprecated environment variables allowed
     description+: |
-        Verify that using deprecated variables is allowed, handled like
+        Verify that using deprecated variables is allowed and handled like
         the new envar is used and the conversion continues.
     tag+:
         - deprecated-envars

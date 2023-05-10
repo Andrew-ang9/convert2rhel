@@ -303,7 +303,7 @@ def test_disable_data_collection(shell, convert2rhel):
 @pytest.fixture(scope="function")
 def repos(shell):
     """
-    Fixture to move away all the repositories and restore after the test.
+    Fixture to move away all the repositories and restore them after the test.
     """
 
     backup_dir = "/tmp/repobckp"
@@ -332,7 +332,7 @@ def incomplete_rollback_envar():
 
 
 @pytest.mark.test_deprecated_envar_incomplete_rollback
-def test_deprecated_envar_incomplete_rollback(shell, convert2rhel, repos):
+def test_deprecated_envar_incomplete_rollback(shell, convert2rhel, repos, incomplete_rollback_envar):
     """
     This test verifies it's still allowed to use the deprecated
     envar CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK.

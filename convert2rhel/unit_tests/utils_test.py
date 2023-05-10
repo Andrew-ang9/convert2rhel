@@ -42,21 +42,6 @@ from convert2rhel.unit_tests import is_rpm_based_os
 from convert2rhel.unit_tests.conftest import centos7
 
 
-class RunSubprocessMocked(unit_tests.MockFunction):
-    def __init__(self, output="Test output", ret_code=0):
-        self.cmd = []
-        self.cmds = []
-        self.called = 0
-        self.output = output
-        self.ret_code = ret_code
-
-    def __call__(self, cmd, print_cmd=True, print_output=True):
-        self.cmd = cmd
-        self.cmds.append(cmd)
-        self.called += 1
-        return self.output, self.ret_code
-
-
 class TestUtils(unittest.TestCase):
     class DummyFuncMocked(unit_tests.MockFunction):
         def __init__(self):

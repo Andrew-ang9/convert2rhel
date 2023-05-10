@@ -761,7 +761,7 @@ def download_pkg(
         if any(envvar in os.environ for envvar in allow_old_envar_names):
 
             # check to see which envar was used
-            if "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" not in os.environ:
+            if "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" in os.environ:
                 # give the warning about the old envar not being used anymore if it is used
                 loggerinst.warning(
                     "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
@@ -777,12 +777,12 @@ def download_pkg(
         else:
             loggerinst.critical(
                 "Couldn't back up the packages: %s. This means that if a rollback is needed,"
-                "there is no guarantee that the packages will be restored on rollback, which"
-                "could put the system in a broken state.\nCheck to ensure that the %s "
-                "repositories are enabled, and the packages are updated to their latest "
-                "versions.\nIf this error still occurs after re-running the conversion, "
-                "you can set the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'"
-                "to ignore this check." % (pkg, system_info.name)
+                " there is no guarantee that the packages will be restored on rollback, which"
+                " could put the system in a broken state.\nCheck to ensure that the %s "
+                " repositories are enabled, and the packages are updated to their latest "
+                " versions.\nIf this error still occurs after re-running the conversion, "
+                " you can set the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'"
+                " to ignore this check." % (pkg, system_info.name)
             )
 
     path = get_rpm_path_from_yumdownloader_output(cmd, output, dest)
