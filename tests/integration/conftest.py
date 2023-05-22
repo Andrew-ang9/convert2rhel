@@ -329,6 +329,7 @@ def required_packages(shell):
         raise
 
 
+<<<<<<< HEAD
 @pytest.fixture(scope="function")
 def repositories(shell):
     """
@@ -356,6 +357,20 @@ def repositories(shell):
     if "centos-8" in SYSTEM_RELEASE_ENV:
         assert shell(f"mv {backup_dir_eus}/* /usr/share/convert2rhel/repos/").returncode == 0
         assert shell(f"rm -rf {backup_dir_eus}")
+=======
+@pytest.fixture()
+def yum_cache(shell):
+    """
+    Fixture used to clean yum cache of packages and metadata downloaded
+    by the previous test runs.
+    download fail.
+    """
+    pkgmanagers = ["yum", "dnf"]
+
+    assert shell("yum clean all --enablerepo=* --quiet").returncode == 0
+    for pkgmanager in pkgmanagers:
+        shell(f"rm -rf /var/cache/{pkgmanager}")
+>>>>>>> 2943003 (Fix tests)
 
 
 @pytest.fixture(autouse=True)
@@ -368,7 +383,11 @@ def missing_centos_release_workaround(system_release, shell):
     # run only after the test finishes
     yield
 
+<<<<<<< HEAD
     if "centos-8.5" in system_release:
+=======
+    if "centos-8" in system_release:
+>>>>>>> 2943003 (Fix tests)
         rpm_output = shell("rpm -q centos-linux-release").output
         if "not installed" in rpm_output:
             shell("yum install -y --releasever=8 centos-linux-release")

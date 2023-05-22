@@ -21,17 +21,6 @@ if "8" in SYSTEM_RELEASE_ENV:
     FINAL_MESSAGE = "VALIDATE_PACKAGE_MANAGER_TRANSACTION.UNKNOWN_ERROR: Failed to download the transaction packages."
 
 
-@pytest.fixture()
-def yum_cache(shell):
-    """
-    We need to clean yum cache of packages and metadata downloaded by the
-    previous test runs to correctly reproduce the transaction validation
-    download fail.
-    """
-    assert shell("yum clean all --enablerepo=* --quiet").returncode == 0
-    assert shell(f"rm -rf /var/cache/{PKGMANAGER}")
-
-
 def remove_entitlement_certs():
     """
     Utility function to remove the entitlement certificate as soon as we
