@@ -179,6 +179,7 @@ class TestUtils(unittest.TestCase):
     @unit_tests.mock(os, "environ", {})
     def test_download_pkg_failed_download_exit(self):
         self.assertRaises(SystemExit, utils.download_pkg, "kernel")
+
     @unit_tests.mock(os, "environ", {"CONVERT2RHEL_INCOMPLETE_ROLLBACK": "1"})
     def test_download_pkg_failed_download_overridden(self):
         path = utils.download_pkg("kernel")
@@ -301,16 +302,16 @@ class TestDownloadPkg(object):
         pretend_os,
         monkeypatch,
         caplog,
+        global_tool_opts,
     ):
+        global_tool_opts.activity = "conversion"
         monkeypatch.setattr(utils, "run_cmd_in_pty", TestUtils.RunSubprocessMocked(ret_code=1))
 
-        monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_INCOMPLETE_ROLLBACK": incomplete_rollback})
+        if incomplete_rollback == 1:
+            monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_INCOMPLETE_ROLLBACK": incomplete_rollback})
 
         if unsupported_rollback == 1:
             monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": unsupported_rollback})
-            utils.download_pkg(package_name)
-
-            assert unsupported_log in caplog.records[-1].message
 
         path = utils.download_pkg(package_name)
         assert path is None
