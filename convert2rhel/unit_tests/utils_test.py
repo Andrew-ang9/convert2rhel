@@ -234,7 +234,14 @@ class TestUtils(unittest.TestCase):
 
 class TestDownloadPkg(object):
     @centos7
-    def test_download_pkg_failed_download_overridden(self, pretend_os, monkeypatch, caplog):
+    def test_download_pkg_failed_download_overridden(
+        self,
+        pretend_os,
+        monkeypatch,
+        caplog,
+        global_tool_opts,
+    ):
+        global_tool_opts.activity = "conversion"
         monkeypatch.setattr(utils, "run_cmd_in_pty", TestUtils.RunSubprocessMocked(ret_code=1))
         expected_log = (
             "Couldn't back up the packages: kernel. This means that if a rollback is needed,"
@@ -307,10 +314,10 @@ class TestDownloadPkg(object):
         global_tool_opts.activity = "conversion"
         monkeypatch.setattr(utils, "run_cmd_in_pty", TestUtils.RunSubprocessMocked(ret_code=1))
 
-        if incomplete_rollback == 1:
+        if incomplete_rollback == "1":
             monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_INCOMPLETE_ROLLBACK": incomplete_rollback})
 
-        if unsupported_rollback == 1:
+        if unsupported_rollback == "1":
             monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": unsupported_rollback})
 
         path = utils.download_pkg(package_name)
