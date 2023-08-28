@@ -351,8 +351,8 @@ def test_deprecated_envar_incomplete_rollback(shell, convert2rhel, repos, incomp
        accepted and conversion continues
     # TODO(danmyway) switch to `convert2rhel analyze` when available.
     """
-    with convert2rhel("--debug --no-rpm-va") as c2r:
-        # We need to get past the data collection acknowledgement.
+    with convert2rhel("analyze --debug --no-rpm-va") as c2r:
+        # We need to get past the data collection acknowledgement
         c2r.sendline("y")
         c2r.expect("REMOVE_REPOSITORY_FILES_PACKAGES::PACKAGE_REMOVAL_FAILED", timeout=300)
         # Verify the user is informed to not use the envar during the analysis
