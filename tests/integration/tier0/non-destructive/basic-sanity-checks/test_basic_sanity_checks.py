@@ -106,7 +106,7 @@ def test_c2r_latest_newer(convert2rhel, c2r_version, version):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        assert c2r.expect("Latest available Convert2RHEL version is installed.", timeout=300) == 0
+        assert c2r.expect("Latest available convert2rhel version is installed.", timeout=300) == 0
 
         c2r.sendcontrol("c")
 
@@ -127,7 +127,14 @@ def test_c2r_latest_older_inhibit(convert2rhel, c2r_version, version):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        assert c2r.expect("CONVERT2RHEL_LATEST_VERSION::OUT_OF_DATE - You are currently running 0.01", timeout=300) == 0
+        assert (
+            c2r.expect(
+                "CONVERT2RHEL_LATEST_VERSION::OUT_OF_DATE - Outdated convert2rhel version detected",
+                timeout=300,
+            )
+            == 0
+        )
+        assert c2r.expect("Diagnosis: You are currently running 0.01.0", timeout=300) == 0
         assert c2r.expect("Only the latest version is supported for conversion.", timeout=300) == 0
 
         c2r.sendcontrol("c")
@@ -354,16 +361,28 @@ def test_deprecated_envar_incomplete_rollback(shell, convert2rhel, repos, incomp
     with convert2rhel("analyze --debug --no-rpm-va") as c2r:
         # We need to get past the data collection acknowledgement
         c2r.sendline("y")
-        c2r.expect("REMOVE_REPOSITORY_FILES_PACKAGES::PACKAGE_REMOVAL_FAILED", timeout=300)
+        c2r.expect("REMOVE_REPOSITORY_FILES_PACKAGES::REPOSITORY_FILE_PACKAGE_REMOVAL_FAILED", timeout=300)
         # Verify the user is informed to not use the envar during the analysis
         assert (
             c2r.expect(
                 "setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' but not during pre-conversion analysis",
                 timeout=300,
             )
+            == 0
+        )
+        # The conversion should fail
+        assert c2r.exitstatus != 0
 
-        assert c2r.expect("environment variable detected, continuing conversion.", timeout=120) == 0
-        # Terminate the conversion when the old envar is allowed
+    with convert2rhel("--debug --no-rpm-va") as c2r:
+        # We need to get past the data collection acknowledgement
+        c2r.sendline("y")
+        assert (
+            c2r.expect(
+                "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.",
+                timeout=300,
+            )
+            == 0
+        )
         c2r.sendcontrol("c")
 
     assert c2r.exitstatus != 0
